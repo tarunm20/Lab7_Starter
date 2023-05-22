@@ -45,6 +45,24 @@ function initializeServiceWorker() {
   // We first must register our ServiceWorker here before any of the code in
   // sw.js is executed.
   // B1. TODO - Check if 'serviceWorker' is supported in the current browser
+  if('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const register = await navigator.serviceWorker.register('./sw.js', {scope: '.'});
+        if(register.installing) {
+          console.log('Working on installation');
+        }
+        else if (register.waiting) {
+          console.log('The serviceWorker has been installed');
+        }
+        else if (register.active) {
+          console.log('The serviceWorker is active');
+        }
+      } catch (err) {
+        console.error(`There is an error: ${err}`);
+      }
+    })
+  }
   // B2. TODO - Listen for the 'load' event on the window object.
   // Steps B3-B6 will be *inside* the event listener's function created in B2
   // B3. TODO - Register './sw.js' as a service worker (The MDN article
@@ -68,10 +86,12 @@ async function getRecipes() {
   // EXPOSE - START (All expose numbers start with A)
   // A1. TODO - Check local storage to see if there are any recipes.
   //            If there are recipes, return them.
+
   const existingRecipes = localStorage.getItem('recipes');
-  if (existingRecipes != null) {
+  if (existingRecipes !== null) {
     return JSON.parse(existingRecipes);
   }
+  
   /**************************/
   // The rest of this method will be concerned with requesting the recipes
   // from the network
@@ -86,11 +106,9 @@ async function getRecipes() {
   return new Promise(async (resolve, reject) => {
     try {
       for (let recipeUrl in RECIPE_URLS) {
-
-        let response = await fetch(recipeUrl);
+        let response = await fetch(RECIPE_URLS[recipeUrl]);
         let recipeData = await response.json();
         recipes.push(recipeData);
-
       }
       if(recipes.length == RECIPE_URLS.length) {
         saveRecipesToStorage(recipes);
